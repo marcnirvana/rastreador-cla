@@ -6,21 +6,38 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Baixar o repositório
         uses: actions/checkout@v4
 
-      - name: Compilar o APK com Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
         with:
-          command: buildozer android debug
-          buildozer_version: stable
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependências do sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev \
+            libtinfo5 cmake libffi-dev libssl-dev build-essential ccache
+          pip install --upgrade pip
+          pip install "cython==0.29.36" "buildozer==1.5.0"
+
+      - name: Compilar o APK (debug)
+        run: buildozer android debug
 
       - name: Publicar o APK
         uses: actions/upload-artifact@v4
         with:
           name: rastreadorcla-apk
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: bin/*.apk
           if-no-files-found: error
